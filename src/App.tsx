@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Card } from './components/Card';
 import CarsDataDB from './db/data.json';
-
-
+import _uniqueId from 'lodash/uniqueId';
 
 const Wrapper = styled.div`
   display: flex;
@@ -22,37 +21,52 @@ export type CarsData = {
   engine: string;
   availability: boolean;
   photo?: string | undefined;
-  id?: number | string
+} & Pick<CarsDataExtra, 'id'>;
+
+type CarsDataExtra = {
+  id?: any;
 };
 
-const { offers } = CarsDataDB;
+let { offers } = CarsDataDB;
 
 const App: React.FC = () => {
-  const [cars, setCars] = useState<CarsData[] > (offers);
+  const [cars, setCars] = useState<Array<CarsData>>(offers);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    setCars(offers)
-  }, [CarsDataDB]);
+  const availabilityParser = ({ availability, i }: any) => {
+    offers[i].availability = availability;
 
-  // useEffect(() => {
-  //   const fetchItems = async () => {
-  //     const result = await fetch('https://bitbucket.org/dacsoftware/recruitment-frontend/src/master/data.json', {
-  //       // headers : {
-  //       //   'Content-Type': 'application/json',
-  //       //   'Accept': 'application/json'
-  //       //  }
-  //     })
-  //       .then((res) => res.json())
-  //       .then((data) => {console.log(data) })
-  //   };
-  //   fetchItems();
-  // }, []);
+    setCars([...cars]);
+  };
+
+  const removeParser = ({ id, i }: any) => {
+    const updatedCars = cars.filter((item) => item.id !== id);
+
+    console.log(id);
+    setCars([...updatedCars]);
+
+    console.log('updatedCars', updatedCars);
+    console.log('cars', cars);
+  };
+
+  const offersParser = (data: any) => {
+    const { offers } = data;
+    offers.map((offer: CarsData) => (offer.id = Number(_uniqueId())));
+    return [...offers];
+  };
+
+  useEffect(() => {
+    setCars(offersParser(CarsDataDB));
+  }, [CarsDataDB, offers]);
 
   return (
     <>
       <Wrapper>
-      <Card cars={cars} />
+        <Card
+          cars={cars}
+          getQuery={(result) => availabilityParser(result)}
+          remove={(result) => removeParser(result)}
+        />
       </Wrapper>
     </>
   );
